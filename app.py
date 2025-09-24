@@ -55,14 +55,18 @@ elif menu == "Cadastrar Local":
         descricao = st.text_area("Descrição")
 
         if st.button("Salvar local"):
-            doc = {
-                "nome_local": nome_local,
-                "cidade": cidade,
-                "coordenadas": {"latitude": latitude, "longitude": longitude},
-                "descricao": descricao
-            }
-            db_mongo.insert_document("locais", doc)
-            st.success(f"Local {nome_local} cadastrado em {cidade}!")
+            if nome_local and cidade and descricao and latitude != 0.0 and longitude != 0.0:
+                doc = {
+                    "nome_local": nome_local,
+                    "cidade": cidade,
+                    "coordenadas": {"latitude": latitude, "longitude": longitude},
+                    "descricao": descricao
+                }
+                db_mongo.insert_document("locais", doc)
+                st.success(f"Local {nome_local} cadastrado em {cidade}!")
+            else:
+                st.warning("Preencha todos os campos antes de salvar.")
+
 
 elif menu == "Consultar Locais":
     st.subheader("Locais por cidade")
@@ -78,16 +82,26 @@ elif menu == "Consultar Locais":
             df = pd.DataFrame(locais)
             st.dataframe(df[["nome_local", "cidade", "descricao"]])
 
-            mapa = folium.Map(location=[df['coordenadas'][0]['latitude'], df['coordenadas'][0]['longitude']], zoom_start=12)
-            for _, row in df.iterrows():
-                folium.Marker(
-                    location=[row['coordenadas']['latitude'], row['coordenadas']['longitude']],
-                    popup=row['nome_local']
-                ).add_to(mapa)
+            try:
+                lat_ref = df['coordenadas'][0]['latitude']
+                lon_ref = df['coordenadas'][0]['longitude']
+                mapa = folium.Map(location=[lat_ref, lon_ref], zoom_start=12)
 
-            st_folium(mapa, width=700, height=500)
+                for _, row in df.iterrows():
+                    try:
+                        folium.Marker(
+                            location=[row['coordenadas']['latitude'], row['coordenadas']['longitude']],
+                            popup=row['nome_local']
+                        ).add_to(mapa)
+                    except Exception:
+                        continue
+
+                st_folium(mapa, width=700, height=500)
+            except Exception:
+                st.warning("Não foi possível exibir o mapa. Verifique as coordenadas cadastradas.")
         else:
             st.info("Nenhum local encontrado para esta cidade.")
+
 
 elif menu == "Proximidade":
     st.subheader("Buscar locais próximos")
