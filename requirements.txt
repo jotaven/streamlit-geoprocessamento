@@ -3,3 +3,4 @@ pymongo
 geopy
 pandas
 folium
+streamlit-folium
